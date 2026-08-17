@@ -154,6 +154,7 @@ export default function Page() {
   const [optimized, setOptimized] = useState("");
   const [truncated, setTruncated] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [jobFetched, setJobFetched] = useState(false);
   const fileRef = useRef(null);
 
   const words = cv.trim() ? cv.trim().split(/\s+/).length : 0;
@@ -182,7 +183,12 @@ export default function Page() {
     setBusy("scan");
     setScan(null);
     try {
-      const { text } = await analyze("scan", cv.trim(), job.trim());
+      const data = await analyze("scan", cv.trim(), job.trim());
+      const { text } = data;
+      if (data.jobFetched && data.jobText) {
+        setJob(data.jobText);
+        setJobFetched(true);
+      }
       let parsed;
       try {
         parsed = extractJson(text);
@@ -216,7 +222,12 @@ export default function Page() {
     setOptimized("");
     setTruncated(false);
     try {
-      const { text, truncated: cut } = await analyze("optimize", cv.trim(), job.trim());
+      const data = await analyze("optimize", cv.trim(), job.trim());
+      const { text, truncated: cut } = data;
+      if (data.jobFetched && data.jobText) {
+        setJob(data.jobText);
+        setJobFetched(true);
+      }
       const clean = text.replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "").trim();
       if (!clean) throw new Error("Aucun contenu n'est revenu. Relance l'optimisation.");
       setOptimized(clean);
@@ -307,15 +318,24 @@ export default function Page() {
             <div className="field" style={{ marginBottom: 14 }}>
               <div className="head">
                 <h2>L&apos;annonce</h2>
-                <span className="mono">requise pour optimiser</span>
+                <span className="mono">texte ou lien</span>
               </div>
               <textarea
                 rows={9}
                 value={job}
-                onChange={(e) => setJob(e.target.value)}
-                placeholder="Colle ici le texte de l'offre d'emploi…"
+                onChange={(e) => {
+                  setJob(e.target.value);
+                  setJobFetched(false);
+                }}
+                placeholder="Colle le texte de l'offre — ou simplement son lien (https://…)"
                 aria-label="Texte de l'annonce"
               />
+              {jobFetched && (
+                <p className="note" style={{ marginTop: 6, marginBottom: 0 }}>
+                  Texte récupéré depuis le lien. Relis-le : si l&apos;annonce est incomplète,
+                  remplace-le par un copier-coller.
+                </p>
+              )}
             </div>
 
             <div className="actions">
