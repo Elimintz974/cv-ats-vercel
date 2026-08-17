@@ -155,6 +155,7 @@ export default function Page() {
   const [truncated, setTruncated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [jobFetched, setJobFetched] = useState(false);
+  const [makingDocx, setMakingDocx] = useState(false);
   const fileRef = useRef(null);
 
   const words = cv.trim() ? cv.trim().split(/\s+/).length : 0;
@@ -246,6 +247,20 @@ export default function Page() {
       setTimeout(() => setCopied(false), 1800);
     } catch (e) {
       setError("La copie automatique est bloquée. Sélectionne le texte et copie-le à la main.");
+    }
+  }
+
+  async function downloadDocx() {
+    setMakingDocx(true);
+    try {
+      const { buildDocx } = await import("./lib/docx");
+      await buildDocx(optimized, "cv-ats.docx");
+    } catch (e) {
+      setError(
+        "La génération du document Word a échoué. Utilise le téléchargement en .txt en attendant."
+      );
+    } finally {
+      setMakingDocx(false);
     }
   }
 
@@ -513,13 +528,18 @@ export default function Page() {
                 <button className="btn btn-ghost" onClick={copyOut}>
                   {copied ? "Copié" : "Copier"}
                 </button>
+                <button className="btn btn-ghost" onClick={downloadDocx} disabled={makingDocx}>
+                  {makingDocx ? "Génération…" : "Télécharger en .docx"}
+                </button>
                 <button className="btn btn-ghost" onClick={downloadOut}>
-                  Télécharger en .txt
+                  .txt brut
                 </button>
               </div>
               <p className="note" style={{ marginBottom: 0, marginTop: 12 }}>
                 Relis-le ligne à ligne avant de l&apos;envoyer. Toute mention [À COMPLÉTER] est une
-                information que l&apos;outil a refusé d&apos;inventer à ta place.
+                information que l&apos;outil a refusé d&apos;inventer à ta place. Le .docx est mis en
+                page pour le recruteur tout en restant lisible par la machine ; le .txt sert aux
+                formulaires qui demandent un copier-coller.
               </p>
             </div>
           )}
